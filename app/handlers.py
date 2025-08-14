@@ -73,7 +73,7 @@ async def start_handler(message: Message, state: FSMContext):
     await state.set_state(Await.await_audio)
     data = await state.get_data()
     await message.bot.delete_message(chat_id=data["url"][0], message_id=data["url"][1])
-    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\n может занять от 1 до 10 мин. в зависимости от количества видео")
+    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин. в зависимости от количества видео")
 
 
     downloaded_files = download_mp3_from_youtube(message.text)
@@ -92,6 +92,8 @@ async def start_handler(message: Message, state: FSMContext):
         await message.bot.delete_message(chat_id=msg_await.chat.id, message_id=msg_await.message_id)
 
     await state.set_state(DeleteMsg.delete)
+    await message.bot.delete_message(chat_id=msg_await.chat.id, message_id=msg_await.message_id)
+
 
 
     if downloaded_files:
