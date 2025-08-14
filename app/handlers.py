@@ -22,22 +22,26 @@ router = Router()
 
 
 # ---- универсальная функция безопасного удаления ----
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+
 async def safe_delete_message(bot, chat_id: int, message_id: int, state: FSMContext = None):
     try:
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
 
     except TelegramForbiddenError:
-        # Если нет прав — отправляем предупреждение и сохраняем в state для удаления
+        # Сообщаем в чат и сохраняем сообщение для автоудаления
         warn_msg = await bot.send_message(
             chat_id=chat_id,
-            text="⚠ У меня нет прав на удаление сообщений. Пожалуйста, выдай их."
+            text="⚠ У меня нет прав на удаление сообщений. Пожалуйста, добавьте мне это право в настройках группы."
         )
         if state:
             await state.update_data(delete=[warn_msg.chat.id, warn_msg.message_id])
 
     except TelegramBadRequest:
-        # Сообщение уже удалено или слишком старое
+        # Сообщение уже удалено или слишком старое — просто игнорируем
         pass
+
+
 
 
 @router.message(F.text & ~(F.text.startswith('/start') | F.text.startswith('/src')), DeleteMsg.delete)
