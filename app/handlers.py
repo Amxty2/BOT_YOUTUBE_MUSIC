@@ -109,5 +109,4 @@ async def handler_url(message: Message, state: FSMContext):
 
 
     if downloaded_files:
-        print(downloaded_files)
         remove_file(downloaded_files)
