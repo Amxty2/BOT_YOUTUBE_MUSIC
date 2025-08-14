@@ -92,6 +92,7 @@ async def start_handler(message: Message, state: FSMContext):
         await message.bot.delete_message(chat_id=msg_await.chat.id, message_id=msg_await.message_id)
 
     await state.set_state(DeleteMsg.delete)
+    await message.bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
     await message.bot.delete_message(chat_id=msg_await.chat.id, message_id=msg_await.message_id)
 
 
