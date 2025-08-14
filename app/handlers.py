@@ -4,6 +4,7 @@ from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+import asyncio
 
 import app.keyboards as kb
 from app.yt_mp3 import download_mp3_from_youtube, remove_file
@@ -22,24 +23,19 @@ router = Router()
 
 
 # ---- универсальная функция безопасного удаления ----
-from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
-
-async def safe_delete_message(bot, chat_id: int, message_id: int, state: FSMContext = None):
+async def safe_delete_message(bot, chat_id: int, message_id: int):
     try:
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
 
+    except TelegramBadRequest as e:
+        if "message can't be deleted" in str(e):
+            await bot.send_message(
+                chat_id=chat_id,
+                text="⚠ У меня нет прав на удаление сообщений. Пожалуйста, выдай их, так будет гораздо удобнее."
+            )
     except TelegramForbiddenError:
-        # Сообщаем в чат и сохраняем сообщение для автоудаления
-        warn_msg = await bot.send_message(
-            chat_id=chat_id,
-            text="⚠ У меня нет прав на удаление сообщений. Пожалуйста, добавьте мне это право в настройках группы."
-        )
-        if state:
-            await state.update_data(delete=[warn_msg.chat.id, warn_msg.message_id])
-
-    except TelegramBadRequest:
-        # Сообщение уже удалено или слишком старое — просто игнорируем
         pass
+
 
 
 
@@ -59,17 +55,18 @@ async def handler_await_audio(message: Message):
 
 @router.message(Command("start"))
 async def handler_start(message: Message, state: FSMContext):
-    if str(message.from_user.id) not in USERS:
-        return
-    await state.set_state(DeleteMsg.delete)
+    if str(message.from_user.id) not in USERS: return
     await safe_delete_message(message.bot, message.chat.id, message.message_id)
 
+    await state.set_state(DeleteMsg.delete)
     await message.answer(
-        "👋 Привет! Я — бот, который пришлет тебе mp3 c Youtube\n"
-        "просто введи команду /src и потом вставь ссылку на видео или плейлист\n"
-        "видео должно быть длинной не более 20 минут\n"
-        "плейлист должен быть размером не более 20 видео\n"
-        '"это сообщение можно удалить"',
+        "👋 Привет! Я — бот, который пришлёт тебе 🎵 MP3 с YouTube!\n\n"
+        "📌 Как пользоваться:\n"
+        "1️⃣ Введи команду /src\n"
+        "2️⃣ Вставь ссылку на видео или плейлист\n\n"
+        "⚠ Ограничения: видео ≤ 20 минут, плейлист ≤ 20 видео.\n\n"
+        "💡 Если добавляешь меня в группу — ОБЯЗАТЕЛЬНО выдай права на удаление сообщений, иначе я не смогу убирать лишнее.\n\n"
+        "🗑 Это сообщение можно удалить.",
         reply_markup=kb.src
     )
 
@@ -99,14 +96,17 @@ async def handler_url(message: Message, state: FSMContext):
             await message.bot.send_audio(chat_id=message.chat.id, audio=audio, reply_markup=kb.src)
     else:
         await state.set_state(DeleteMsg.delete)
-        msg_failed = await message.answer("Не удалось скачать")
-        await state.update_data(delete=[msg_failed.chat.id, msg_failed.message_id])
+        msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с)")
         await safe_delete_message(message.bot, message.chat.id, message.message_id)
         await safe_delete_message(message.bot, msg_await.chat.id, msg_await.message_id)
+        await asyncio.sleep(5)
+        await safe_delete_message(message.bot, msg_failed.chat.id, msg_failed.message_id)
+        return
 
     await state.set_state(DeleteMsg.delete)
     await safe_delete_message(message.bot, message.chat.id, message.message_id)
     await safe_delete_message(message.bot, msg_await.chat.id, msg_await.message_id)
+
 
     if downloaded_files:
         remove_file(downloaded_files)
