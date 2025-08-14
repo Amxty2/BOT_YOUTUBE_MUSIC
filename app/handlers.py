@@ -43,7 +43,7 @@ async def start_handler(message : Message, state: FSMContext):
 # Обработчик команды /start
 @router.message(Command("start"))
 async def start_handler(message: Message, state: FSMContext):
-    if not message.from_user.id in str(USERS): return
+    if not str(message.from_user.id) in USERS: return
     await state.set_state(DeleteMsg.delete)
     await message.bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
 
