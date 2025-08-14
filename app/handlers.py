@@ -86,7 +86,7 @@ async def handler_url(message: Message, state: FSMContext):
     data = await state.get_data()
 
     await safe_delete_message(message.bot, data["url"][0], data["url"][1])
-    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин. в зависимости от количества видео")
+    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин.\nв зависимости от количества видео")
 
     downloaded_files = download_mp3_from_youtube(message.text)
 
@@ -109,4 +109,5 @@ async def handler_url(message: Message, state: FSMContext):
 
 
     if downloaded_files:
+        print(downloaded_files)
         remove_file(downloaded_files)
