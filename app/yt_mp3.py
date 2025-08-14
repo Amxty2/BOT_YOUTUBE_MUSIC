@@ -27,6 +27,7 @@ def download_mp3_from_youtube(
         'nocheckcertificate': True,
         "ignoreerrors": True,
         'playlist_items': '1:20',
+        'max_filesize': 40 * 1024 * 1024,  # 40 MB в байтах
         'progress_hooks': [my_hook],
         'match_filter': duration_filter,
         'postprocessors': [{
