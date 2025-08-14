@@ -67,8 +67,8 @@ async def handler_start(message: Message, state: FSMContext):
         "1️⃣ Введи команду /src\n"
         "2️⃣ Вставь ссылку на видео или плейлист\n\n"
         "⚠ Ограничения: размер аудио ≤ 40мб, видео ≤ 20 минут, плейлист ≤ 20 видео и без повторяющихся названий.\n\n"
-        "💡 Если добавляешь меня в группу — ОБЯЗАТЕЛЬНО выдай права на удаление сообщений, иначе я не смогу убирать лишнее.\n\n"
-        "🗑 Это сообщение можно удалить.",
+        "⚠ Если добавляешь меня в группу — ОБЯЗАТЕЛЬНО выдай права на удаление сообщений, иначе я не смогу убирать лишнее.\n\n"
+        "📌 Это сообщение лучше не удалять — к нему прикреплена кнопка /src.",
         reply_markup=kb.src
     )
 
@@ -77,7 +77,7 @@ async def handler_start(message: Message, state: FSMContext):
 async def handler_src(message: Message, state: FSMContext):
     await safe_delete_message(message.bot, message.chat.id, message.message_id)
 
-    msg = await message.bot.send_message(chat_id=message.chat.id, text="Вставьте ссылку", reply_markup=ReplyKeyboardRemove())
+    msg = await message.bot.send_message(chat_id=message.chat.id, text="Вставьте ссылку")
     await state.update_data(url=[msg.chat.id, msg.message_id])
     await state.set_state(Input.url)
 
@@ -97,14 +97,14 @@ async def handler_url(message: Message, state: FSMContext):
             audio = FSInputFile(file_path)
             try:
                 await asyncio.sleep(3)
-                await message.bot.send_audio(chat_id=message.chat.id, audio=audio, reply_markup=kb.src)
+                await message.bot.send_audio(chat_id=message.chat.id, audio=audio)
             except Exception as e:
                 print(e)
                 await asyncio.sleep(5)
                 continue
     else:
         await state.set_state(DeleteMsg.delete)
-        msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с)", reply_markup=kb.src)
+        msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с)")
         await safe_delete_message(message.bot, message.chat.id, message.message_id)
         await safe_delete_message(message.bot, msg_await.chat.id, msg_await.message_id)
         await asyncio.sleep(5)
