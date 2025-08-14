@@ -4,6 +4,8 @@ from aiogram.filters import Command
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+
+
 import asyncio
 
 import app.keyboards as kb
@@ -64,7 +66,7 @@ async def handler_start(message: Message, state: FSMContext):
         "📌 Как пользоваться:\n"
         "1️⃣ Введи команду /src\n"
         "2️⃣ Вставь ссылку на видео или плейлист\n\n"
-        "⚠ Ограничения: видео ≤ 20 минут, плейлист ≤ 20 видео.\n\n"
+        "⚠ Ограничения: размер аудио ≤ 40мб, видео ≤ 20 минут, плейлист ≤ 20 видео.\n\n"
         "💡 Если добавляешь меня в группу — ОБЯЗАТЕЛЬНО выдай права на удаление сообщений, иначе я не смогу убирать лишнее.\n\n"
         "🗑 Это сообщение можно удалить.",
         reply_markup=kb.src
@@ -86,14 +88,20 @@ async def handler_url(message: Message, state: FSMContext):
     data = await state.get_data()
 
     await safe_delete_message(message.bot, data["url"][0], data["url"][1])
-    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин.\nв зависимости от количества видео")
+    msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин. в зависимости от количества видео")
 
     downloaded_files = download_mp3_from_youtube(message.text)
 
     if downloaded_files:
         for file_path in downloaded_files:
             audio = FSInputFile(file_path)
-            await message.bot.send_audio(chat_id=message.chat.id, audio=audio, reply_markup=kb.src)
+            try:
+                await asyncio.sleep(3)
+                await message.bot.send_audio(chat_id=message.chat.id, audio=audio, reply_markup=kb.src)
+            except Exception as e:
+                print(e)
+                await asyncio.sleep(5)
+                continue
     else:
         await state.set_state(DeleteMsg.delete)
         msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с)")
