@@ -104,7 +104,7 @@ async def handler_url(message: Message, state: FSMContext):
                 continue
     else:
         await state.set_state(DeleteMsg.delete)
-        msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с)")
+        msg_failed = await message.answer("Не удалось скачать\nЭто сообщение удалиться через (5с), reply_markup=kb.src")
         await safe_delete_message(message.bot, message.chat.id, message.message_id)
         await safe_delete_message(message.bot, msg_await.chat.id, msg_await.message_id)
         await asyncio.sleep(5)
