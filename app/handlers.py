@@ -5,7 +5,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 
-
+import threading
 import asyncio
 
 import app.keyboards as kb
@@ -22,6 +22,7 @@ class Await(StatesGroup):
     await_audio = State()
 
 router = Router()
+lock = threading.Lock()  # глобальный замок для всех потоков
 
 
 # ---- универсальная функция безопасного удаления ----
@@ -72,7 +73,6 @@ async def handler_start(message: Message, state: FSMContext):
     await message.answer("📌 Это сообщение лучше не удалять — к нему прикреплена кнопка /src.", reply_markup=kb.src)
 
 
-
 @router.message(Command("src"), DeleteMsg.delete)
 async def handler_src(message: Message, state: FSMContext):
     await safe_delete_message(message.bot, message.chat.id, message.message_id)
@@ -80,6 +80,11 @@ async def handler_src(message: Message, state: FSMContext):
     msg = await message.bot.send_message(chat_id=message.chat.id, text="Вставьте ссылку")
     await state.update_data(url=[msg.chat.id, msg.message_id])
     await state.set_state(Input.url)
+
+
+def download_mp3(url):
+    with lock:
+        return download_mp3_from_youtube(url)
 
 
 @router.message(Input.url)
@@ -90,7 +95,7 @@ async def handler_url(message: Message, state: FSMContext):
     await safe_delete_message(message.bot, data["url"][0], data["url"][1])
     msg_await = await message.bot.send_message(chat_id=message.chat.id, text="ожидайте...\nзагрузка может занять от 1 до 10 мин. в зависимости от количества видео")
 
-    downloaded_files = download_mp3_from_youtube(message.text)
+    downloaded_files = await asyncio.to_thread(download_mp3, message.text)
 
     if downloaded_files:
         for file_path in downloaded_files:
